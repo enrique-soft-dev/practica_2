@@ -5,7 +5,7 @@ from game import *
 from learningAgents import ReinforcementAgent
 from featureExtractors import *
 
-import random,util,math
+import random,util,math,json
 
 class QLearningAgent(ReinforcementAgent):
     """
@@ -19,15 +19,30 @@ class QLearningAgent(ReinforcementAgent):
         - self.alpha (learning rate)
         - self.discount (discount rate)
     """
-    def __init__(self, **args):
+    def __init__(self, jsonFile, createTable, qTableFile, ghostAgents=None, **args):
         "Initialize Q-values"
         ReinforcementAgent.__init__(self, **args)
 
-        self.actions = {"north":0, "east":1, "south":2, "west":3, "exit":4}
-        self.table_file = open("qtable.txt", "r+")
+        self.actions = {"North":0, "East":1, "South":2, "West":3, "Stop":4}
+
+        self.json_data = []
+        with open("./" + jsonFile, "r") as file:
+            self.json_data = json.load(file)
+        self.numStates = 1
+        for i in self.json_data:
+            self.numStates *= i["max-value"]
+            
+        if createTable:
+            self.table_file = open(qTableFile + ".txt", "x")
+            self.table_file.seek(0)
+            self.table_file.truncate()
+            for i in range(self.numStates):
+                self.table_file.write("0.0 0.0 0.0 0.0 0.0")
+                self.table_file.write("\n")
+            self.table_file.close()
+        self.table_file = open(qTableFile + ".txt", "r+")
 #        self.table_file_csv = open("qtable.csv", "r+")        
         self.q_table = self.readQtable()
-        self.epsilon = 1
 
     def readQtable(self):
         "Read qtable from disc"
@@ -75,7 +90,18 @@ class QLearningAgent(ReinforcementAgent):
         Compute the row of the qtable for a given state.
         For instance, the state (3,1) is the row 7
         """
-        return state[0]+state[1]*4
+
+        line = 0
+        numAttributes = len(state) - 1
+        slicer = self.numStates
+        for i in reversed(self.json_data):
+            slicer //= i["max-value"]
+            if i["type"] == "integer":
+                line += slicer * state[numAttributes]
+            else:
+                line += slicer * i[state[numAttributes]]
+            numAttributes -= 1
+        return line
 
     def getQValue(self, state, action):
 
@@ -108,14 +134,15 @@ class QLearningAgent(ReinforcementAgent):
           are no legal actions, which is the case at the terminal state,
           you should return None.
         """
-        legalActions = self.getLegalActions(state)
+        legalActions = state[0]
+        attributes = state[1]
         if len(legalActions)==0:
           return None
 
         best_actions = [legalActions[0]]
-        best_value = self.getQValue(state, legalActions[0])
+        best_value = self.getQValue(attributes, legalActions[0])
         for action in legalActions:
-            value = self.getQValue(state, action)
+            value = self.getQValue(attributes, action)
             if value == best_value:
                 best_actions.append(action)
             if value > best_value:
@@ -144,8 +171,47 @@ class QLearningAgent(ReinforcementAgent):
 
         if flip:
             return random.choice(legalActions)
-        return self.getPolicy(state)
+        return self.getPolicy([legalActions, list(self.getAttributes(state))])
 
+    def getAttributes(self, state):
+
+        minDistance = 99
+        minIndex = 0
+        pacmanPos = state.getPacmanPosition()
+        livingGhosts = state.getLivingGhosts()[1:]
+        ghostsPos = state.getGhostPositions()
+        ghostsDist = state.data.ghostDistances
+        dotDist, dotPos = state.getDistanceNearestFood()
+        numDots = state.getNumFood()
+        numAGhosts = sum(livingGhosts)
+        
+        for i in range(len(ghostsDist)):
+            if livingGhosts[i]:
+                if ghostsDist[i] < minDistance:
+                    minDistance = ghostsDist[i]
+                    minIndex = i
+        
+        if dotDist is not None and dotDist < minDistance:
+            
+            dist_x = dotPos[0] - pacmanPos[0]
+            dist_y = dotPos[1] - pacmanPos[1]
+            
+        else:
+            dist_x = ghostsPos[minIndex][0] - pacmanPos[0]
+            dist_y = ghostsPos[minIndex][1] - pacmanPos[1]
+        
+        direction = ""
+        if dist_x > 0:
+            direction += "East"
+        elif dist_x < 0:
+            direction += "West"
+        
+        if dist_y > 0:
+            direction += "North"
+        elif dist_y < 0:
+            direction += "South"
+        
+        return numDots, numAGhosts, minDistance, direction
 
     def update(self, state, action, nextState, reward):
         """
@@ -174,10 +240,29 @@ class QLearningAgent(ReinforcementAgent):
         
         
         "*** YOUR CODE HERE ***"
+        cAttributes = self.getAttributes(state)
+        nAttributes = self.getAttributes(nextState)
+        # reward = self.getReward(cAttributes, nAttributes)
+        pos = self.computePosition(cAttributes)
+        column = self.actions[action]
+        
+        if nAttributes[1] == 0:
+            self.q_table[pos][column] = (1 - self.alpha) * self.getQValue(cAttributes, action) + self.alpha * (reward + 0)
+        else:
+            best_action = self.getPolicy([self.getLegalActions(state), list(nAttributes)])
+            self.q_table[pos][column] = (1 - self.alpha) * self.getQValue(cAttributes, action) + self.alpha * (reward + self.discount * self.getQValue(nAttributes, best_action))
 
         # TRACE for updated q-table. Comment the following lines if you do not want to see that trace
 #         print("Q-table:")
 #         self.printQtable()
+
+    def getReward(self, cAttributes, nAttributes):
+
+        if cAttributes[0] != nAttributes[0]:
+            return 100
+        if cAttributes[1] != nAttributes[1]:
+            return 200
+        return 0
 
     def getPolicy(self, state):
         "Return the best action in the qtable for a given state"

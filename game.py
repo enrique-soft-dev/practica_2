@@ -546,6 +546,7 @@ class Game:
         """
         Main control loop for game play.
         """
+        from qlearningAgents import QLearningAgent
         self.display.initialize(self.state.data)
         self.numMoves = 0
 
@@ -662,6 +663,8 @@ class Game:
                     return
             else:
                 action = agent.getAction(observation)
+                if (isinstance(agent, QLearningAgent)):
+                    agent.doAction(observation, action)
             self.unmute()
 
             # Execute the action
@@ -696,8 +699,14 @@ class Game:
         for agentIndex, agent in enumerate(self.agents):
             if "final" in dir( agent ) :
                 try:
+                    print("Termino")
                     self.mute(agentIndex)
-                    agent.final( self.state )
+                    agent.final(self.state)
+                    if isinstance(agent, QLearningAgent):
+                        print(agent.epsilon)
+                        print(agent.alpha)
+                        print(agent.discount)
+                        agent.writeQtable()
                     self.unmute()
                 except Exception as data:
                     if not self.catchExceptions: raise

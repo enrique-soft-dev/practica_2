@@ -231,6 +231,7 @@ class GameState(object):
         """
         if(self.getNumFood() > 0):
             minDistance = 900000
+            minPos = 0
             pacmanPosition = self.getPacmanPosition()
             for i in range(self.data.layout.width):
                 for j in range(self.data.layout.height):
@@ -239,10 +240,11 @@ class GameState(object):
                         distance = util.manhattanDistance(pacmanPosition, foodPosition)
                         if distance < minDistance:
                             minDistance = distance
-            return minDistance
+                            minPos = [i, j]
+            return minDistance, minPos
 
         else:
-            return None;
+            return None, None
 
     def getGhostPositions(self):
         return self.ghostPositions
@@ -535,6 +537,12 @@ def readCommand( argv ):
                       help='Renders the ghosts in the display (cheating)', default=True)
     parser.add_option('-t', '--frameTime', dest='frameTime', type='float',
                       help=default('Time to delay between frames; <0 means keyboard'), default=0.1)
+    parser.add_option('-j', '--jsonFile', dest='jsonFile', type='string', help='The JSON file with the attributes to use',
+                      default='json_data.json')
+    parser.add_option('-c', '--createTable', action='store_true', dest='createTable', 
+                      help='Creates the QTable. If no value given it reads the already created qtable.txt', default=False)
+    parser.add_option('-b', '--qTableFile', dest='qTableFile', type='string', 
+                      help='qTable file to read or create', default='qtable')
 
     options, otherjunk = parser.parse_args()
     if len(otherjunk) != 0:
@@ -557,6 +565,9 @@ def readCommand( argv ):
     pacmanType = loadAgent(options.pacman, noKeyboard)
     agentOpts = parseAgentArgs(options.agentArgs)
     agentOpts['ghostAgents'] = args['ghosts']
+    agentOpts['jsonFile'] = options.jsonFile
+    agentOpts['createTable'] = options.createTable
+    agentOpts['qTableFile'] = options.qTableFile
     pacman = pacmanType(**agentOpts) # Instantiate Pacman with agentArgs
     args['pacman'] = pacman
     import graphicsDisplay
