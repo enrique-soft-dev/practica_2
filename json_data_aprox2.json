@@ -1,0 +1,27 @@
+[
+    {
+        "max-value": 11,
+        "type": "integer"
+    },
+    {
+        "max-value": 4,
+        "type": "integer"
+    },
+    {
+        "max-value": 9,
+        "type": "string",
+        "": 0,
+        "East": 1,
+        "West": 2,
+        "North": 3,
+        "South": 4,
+        "EastNorth": 5,
+        "EastSouth": 6,
+        "WestNorth": 7,
+        "WestSouth": 8
+    },
+    {
+        "max-value": 2,
+        "type": "integer"
+    }
+]

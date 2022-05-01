@@ -547,7 +547,9 @@ class Game:
         Main control loop for game play.
         """
         from qlearningAgents import QLearningAgent
-        self.display.initialize(self.state.data)
+        
+        if self.agents[0].isDisplayed:
+            self.display.initialize(self.state.data)
         self.numMoves = 0
 
         ###self.display.initialize(self.state.makeObservation(1).data)
@@ -681,7 +683,8 @@ class Game:
                 self.state = self.state.generateSuccessor( agentIndex, action )
 
             # Change the display
-            self.display.update( self.state.data )
+            if self.agents[0].isDisplayed:
+                self.display.update( self.state.data )
             ###idx = agentIndex - agentIndex % 2 + 1
             ###self.display.update( self.state.makeObservation(idx).data )
 
@@ -713,4 +716,5 @@ class Game:
                     self._agentCrash(agentIndex)
                     self.unmute()
                     return
-        self.display.finish()
+        if self.agents[0].isDisplayed:
+            self.display.finish()

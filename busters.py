@@ -543,6 +543,8 @@ def readCommand( argv ):
                       help='Creates the QTable. If no value given it reads the already created qtable.txt', default=False)
     parser.add_option('-b', '--qTableFile', dest='qTableFile', type='string', 
                       help='qTable file to read or create', default='qtable')
+    parser.add_option('-d', '--display', action='store_false', dest='isDisplayed',
+                      help='True if we want to display the game', default=True)
 
     options, otherjunk = parser.parse_args()
     if len(otherjunk) != 0:
@@ -568,6 +570,7 @@ def readCommand( argv ):
     agentOpts['jsonFile'] = options.jsonFile
     agentOpts['createTable'] = options.createTable
     agentOpts['qTableFile'] = options.qTableFile
+    agentOpts['isDisplayed'] = options.isDisplayed
     pacman = pacmanType(**agentOpts) # Instantiate Pacman with agentArgs
     args['pacman'] = pacman
     import graphicsDisplay
