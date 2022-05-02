@@ -212,54 +212,54 @@ class ReinforcementAgent(ValueEstimationAgent):
         if self.lastAction == 'Stop':
             return -100
         reward = nextState.getScore() - state.getScore()
-        minDistance = 99
-        minIndex = 0
-        pacmanPos = state.getPacmanPosition()
-        livingGhosts = state.getLivingGhosts()[1:]
-        ghostsPos = state.getGhostPositions()
-        ghostsDist = state.data.ghostDistances
-        dotDist, dotPos = state.getDistanceNearestFood()
-        map = state.getWalls()
+        # minDistance = 99
+        # minIndex = 0
+        # pacmanPos = state.getPacmanPosition()
+        # livingGhosts = state.getLivingGhosts()[1:]
+        # ghostsPos = state.getGhostPositions()
+        # ghostsDist = state.data.ghostDistances
+        # dotDist, dotPos = state.getDistanceNearestFood()
+        # map = state.getWalls()
         
-        for i in range(len(ghostsDist)):
-            if livingGhosts[i]:
-                if ghostsDist[i] < minDistance:
-                    minDistance = ghostsDist[i]
-                    minIndex = i
+        # for i in range(len(ghostsDist)):
+        #     if livingGhosts[i]:
+        #         if ghostsDist[i] < minDistance:
+        #             minDistance = ghostsDist[i]
+        #             minIndex = i
         
-        if dotDist is not None and dotDist < minDistance:
-            minDistance = dotDist
-            dist_x = dotPos[0] - pacmanPos[0]
-            dist_y = dotPos[1] - pacmanPos[1]
-        else:
-            dist_x = ghostsPos[minIndex][0] - pacmanPos[0]
-            dist_y = ghostsPos[minIndex][1] - pacmanPos[1]
+        # if dotDist is not None and dotDist < minDistance:
+        #     minDistance = dotDist
+        #     dist_x = dotPos[0] - pacmanPos[0]
+        #     dist_y = dotPos[1] - pacmanPos[1]
+        # else:
+        #     dist_x = ghostsPos[minIndex][0] - pacmanPos[0]
+        #     dist_y = ghostsPos[minIndex][1] - pacmanPos[1]
         
-        # if minDistance == 0:
-        #     if minDistance == dotDist:
-        #         return 100
-        #     else:
-        #         return 200
-        # elif minDistance == 1:
-        #     if minDistance == dotDist:
-        #         reward += 40
-        #     else:
-        #         reward += 80
-        # elif minDistance == 2:
-        #     if minDistance == dotDist:
-        #         reward += 10
-        #     else:
-        #         reward += 20
+        # # if minDistance == 0:
+        # #     if minDistance == dotDist:
+        # #         return 100
+        # #     else:
+        # #         return 200
+        # # elif minDistance == 1:
+        # #     if minDistance == dotDist:
+        # #         reward += 40
+        # #     else:
+        # #         reward += 80
+        # # elif minDistance == 2:
+        # #     if minDistance == dotDist:
+        # #         reward += 10
+        # #     else:
+        # #         reward += 20
         
-        if dist_x > 0:
-            reward += -20 if map[pacmanPos[0] + 1][pacmanPos[1]] else 0
-        elif dist_x < 0:
-            reward += -20 if map[pacmanPos[0] - 1][pacmanPos[1]] else 0
+        # if dist_x > 0:
+        #     reward += -20 if map[pacmanPos[0] + 1][pacmanPos[1]] else 0
+        # elif dist_x < 0:
+        #     reward += -20 if map[pacmanPos[0] - 1][pacmanPos[1]] else 0
         
-        if dist_y > 0:
-            reward += -20 if map[pacmanPos[0]][pacmanPos[1] + 1] else 0
-        elif dist_y < 0:
-            reward += -20 if map[pacmanPos[0]][pacmanPos[1] - 1] else 0
+        # if dist_y > 0:
+        #     reward += -20 if map[pacmanPos[0]][pacmanPos[1] + 1] else 0
+        # elif dist_y < 0:
+        #     reward += -20 if map[pacmanPos[0]][pacmanPos[1] - 1] else 0
         
         return reward
 
