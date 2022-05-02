@@ -434,6 +434,108 @@ class Aprox3QAgent(QLearningAgent):
         
         return found_wall
 
+class Aprox4QAgent(QLearningAgent):
+    
+    def __init__(self, **args):
+        QLearningAgent.__init__(self, **args)
+    
+    def getAttributes(self, state):
+        
+        minDistance = 99
+        minIndex = 0
+        pacmanPos = state.getPacmanPosition()
+        livingGhosts = state.getLivingGhosts()[1:]
+        ghostsPos = state.getGhostPositions()
+        ghostsDist = state.data.ghostDistances
+        dotDist, dotPos = state.getDistanceNearestFood()
+        map = state.getWalls()
+        
+        for i in range(len(ghostsDist)):
+            if livingGhosts[i]:
+                if ghostsDist[i] < minDistance:
+                    minDistance = ghostsDist[i]
+                    minIndex = i
+        
+        if dotDist is not None and dotDist < minDistance:
+            
+            dist_x = dotPos[0] - pacmanPos[0]
+            dist_y = dotPos[1] - pacmanPos[1]
+            
+            
+        else:
+            dist_x = ghostsPos[minIndex][0] - pacmanPos[0]
+            dist_y = ghostsPos[minIndex][1] - pacmanPos[1]
+        
+        direction = ""
+        if dist_x > 0:
+            direction += "East"
+        elif dist_x < 0:
+            direction += "West"
+        
+        if dist_y > 0:
+            direction += "North"
+        elif dist_y < 0:
+            direction += "South"
+
+        if dotDist is not None and dotDist < minDistance:
+            wall_dir = self.wallInDirection(map, pacmanPos, dotPos, direction)
+        else:
+            wall_dir = self.wallInDirection(map, pacmanPos, ghostsPos[minIndex], direction)
+
+        if wall_dir:
+            walls = self.walls(map, pacmanPos)
+        else:
+            walls = "no-wall"
+
+        
+        
+        return direction, walls
+    
+    def walls(self, map, pacPos):
+        walls = ""
+
+        if map[pacPos[0]][pacPos[1] + 1]:
+            walls += "North"
+        if map[pacPos[0] + 1][pacPos[1]]:
+            walls += "East"
+        if map[pacPos[0]][pacPos[1] - 1]:
+            walls += "South"
+        if map[pacPos[0] - 1][pacPos[1]]:
+            walls += "West"
+        
+        if walls == "":
+            walls += "no-wall"
+        
+        return walls
+
+    def wallInDirection(self, map, pacPos, objectPos, direction):
+        found_wall = 0
+
+        if "East" in direction or "West" in direction:
+            if "East" in direction:
+                for i in range(pacPos[0], objectPos[0]):
+                    if map[i][pacPos[1]]:
+                        found_wall = 1
+                        break
+            else:
+                for i in range(objectPos[0], pacPos[0]):
+                    if map[i][pacPos[1]]:
+                        found_wall = 1
+                        break
+        if "North" in direction or "South" in direction:
+            if "North" in direction:
+                for j in range(pacPos[1], objectPos[1]):
+                    if map[pacPos[0]][j]:
+                        found_wall = 1
+                        break
+            else:
+                for j in range(objectPos[1], pacPos[1]):
+                    if map[pacPos[0]][j]:
+                        found_wall = 1
+                        break
+        
+        return found_wall
+
 class PacmanQAgent(QLearningAgent):
     "Exactly the same as QLearningAgent, but with different default parameters"
 

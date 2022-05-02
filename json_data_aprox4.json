@@ -1,0 +1,35 @@
+[
+    {
+        "max-value": 8,
+        "type": "string",
+        "East": 0,
+        "West": 1,
+        "North": 2,
+        "South": 3,
+        "EastNorth": 4,
+        "EastSouth": 5,
+        "WestNorth": 6,
+        "WestSouth": 7
+    },
+    {
+        "max-value": 16,
+        "type": "string",
+        "no-wall": 0,
+        "North": 1,
+        "East": 2,
+        "South": 3,
+        "West": 4,
+        "NorthEast": 5,
+        "NorthSouth": 6,
+        "NorthWest": 7,
+        "EastSouth": 8,
+        "EastWest": 9,
+        "SouthWest": 10,
+        "NorthEastSouth": 11,
+        "NorthEastWest": 12,
+        "NorthSouthWest": 13,
+        "EastSouthWest": 14,
+        "NorthEastSouthWest": 15
+
+    }
+]
