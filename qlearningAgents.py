@@ -515,14 +515,12 @@ class Aprox3QAgent(QLearningAgent):
         
         return found_wall
 
-
 class Aprox4QAgent(QLearningAgent):
     
     def __init__(self, **args):
         QLearningAgent.__init__(self, **args)
     
     def getAttributes(self, state):
-
         minDistance = 99
         minIndex = 0
         pacmanPos = state.getPacmanPosition()
@@ -531,7 +529,6 @@ class Aprox4QAgent(QLearningAgent):
         ghostsDist = state.data.ghostDistances
         dotDist, dotPos = state.getDistanceNearestFood()
         map = state.getWalls()
-
         for i in range(len(ghostsDist)):
             if livingGhosts[i]:
                 if ghostsDist[i] < minDistance:
