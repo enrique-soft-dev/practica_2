@@ -1,6 +1,7 @@
 # qlearningAgents.py
 # ------------------
 
+from turtle import dot
 from game import *
 from learningAgents import ReinforcementAgent
 from featureExtractors import *
@@ -25,6 +26,7 @@ class QLearningAgent(ReinforcementAgent):
 
         self.actions = {"North":0, "East":1, "South":2, "West":3, "Stop":4}
         self.isDisplayed = isDisplayed
+        self.lista_bucle = []
 
         self.json_data = []
         with open("./" + jsonFile, "r") as file:
@@ -102,6 +104,7 @@ class QLearningAgent(ReinforcementAgent):
             else:
                 line += slicer * i[state[numAttributes]]
             numAttributes -= 1
+        # print(line)
         return line
 
     def getQValue(self, state, action):
@@ -172,7 +175,9 @@ class QLearningAgent(ReinforcementAgent):
 
         if flip:
             return random.choice(legalActions)
-        return self.getPolicy([legalActions, list(self.getAttributes(state))])
+        atrib = list(self.getAttributes(state))
+        # print(atrib[0], atrib[1], atrib[2], atrib[3], atrib[4], self.lista_bucle)
+        return self.getPolicy([legalActions, atrib])
 
     def getAttributes(self, state):
 
@@ -215,41 +220,38 @@ class QLearningAgent(ReinforcementAgent):
         return numDots, numAGhosts, minDistance, direction
 
     def update(self, state, action, nextState, reward):
-        """
-        The parent class calls this to observe a
-        state = action => nextState and reward transition.
-        You should do your Q-Value update here
-
-        Good Terminal state -> reward 1
-        Bad Terminal state -> reward -1
-        Otherwise -> reward 0
-
-        Q-Learning update:
-
-        if terminal_state:
-        Q(state,action) <- (1-self.alpha) Q(state,action) + self.alpha * (r + 0)
-        else:
-        Q(state,action) <- (1-self.alpha) Q(state,action) + self.alpha * (r + self.discount * max a' Q(nextState, a'))
-
-        """
+        """ Update of Q-table """
         # TRACE for transition and position to update. Comment the following lines if you do not want to see that trace
 #         print("Update Q-table with transition: ", state, action, nextState, reward)
 #         position = self.computePosition(state)
 #         action_column = self.actions[action]
 #         print("Corresponding Q-table cell to update:", position, action_column)
 
-        
-        
         "*** YOUR CODE HERE ***"
-        cAttributes = self.getAttributes(state)
-        nAttributes = self.getAttributes(nextState)
+        prevLiving = state.getLivingGhosts()[1:]
+        prevFoodNum = state.getNumFood()
+        prevSum = sum(prevLiving) + prevFoodNum
         livingGhosts = nextState.getLivingGhosts()[1:]
+        numFood = state.getNumFood()
         sumGhosts = sum(livingGhosts)
-        # reward = self.getReward(cAttributes, nAttributes)
+        newSum = sumGhosts + numFood
+        cAttributes = self.getAttributes(state)
+        if prevSum != newSum:
+            self.lista_bucle = []
+            
+        if len(self.lista_bucle) < 4:
+            self.lista_bucle.append(state.getPacmanPosition())
+        else:
+            self.lista_bucle.pop(0)
+            self.lista_bucle.append(state.getPacmanPosition())
+        
+        nAttributes = self.getAttributes(nextState)
+        reward += self.getReward(cAttributes, action, nAttributes)
         pos = self.computePosition(cAttributes)
         column = self.actions[action]
         
         if sumGhosts == 0:
+            self.lista_bucle = []
             self.q_table[pos][column] = (1 - self.alpha) * self.getQValue(cAttributes, action) + self.alpha * (reward + 0)
         else:
             best_action = self.getPolicy([self.getLegalActions(state), list(nAttributes)])
@@ -259,13 +261,92 @@ class QLearningAgent(ReinforcementAgent):
 #         print("Q-table:")
 #         self.printQtable()
 
-    def getReward(self, cAttributes, nAttributes):
+    def getReward(self, cAttributes, action, nAttributes):
 
-        if cAttributes[0] != nAttributes[0]:
-            return 100
-        if cAttributes[1] != nAttributes[1]:
-            return 200
-        return 0
+        if action == "Stop":
+            return -159
+        reward = 0
+        if nAttributes[-1] == 1 and cAttributes[-1] == 0:
+            reward -= 79
+        if nAttributes[-1] == 1 and cAttributes[-1] == 1:
+            reward -= 39
+        if nAttributes[-1] == 0 and cAttributes[-1] == 1:
+            reward += 81
+
+        if cAttributes[-2] > 0:
+            if cAttributes[-2] == 1:
+                if action == "North":
+                    if cAttributes[2] == 1 or nAttributes[2] == 1:
+                        if "N" in cAttributes[0]:
+                            reward -= 14
+                        elif "S" in cAttributes[0]:
+                            reward += 16
+                elif action == "South":
+                    if cAttributes[2] == 1 or nAttributes[2] == 1:
+                        if "S" in cAttributes[0]:
+                            reward -= 14
+                        elif "N" in cAttributes[0]:
+                            reward += 16
+                elif cAttributes[2] == 0:
+                    if action == "East":
+                        reward -= 14
+                    elif action == "West":
+                        reward -= 14
+            elif cAttributes[-2] == 2:
+                if action == "East":
+                    if cAttributes[1] == 1 or nAttributes[1] == 1:
+                        if "E" in cAttributes[0]:
+                            reward -= 14
+                        elif "W" in cAttributes[0]:
+                            reward += 16
+                elif action == "West":
+                    if cAttributes[1] == 1 or nAttributes[1] == 1:
+                        if "W" in cAttributes[0]:
+                            reward -= 14
+                        elif "E" in cAttributes[0]:
+                            reward += 16
+                elif cAttributes[1] == 0:
+                    if action == "North":
+                        reward -= 14
+                    elif action == "South":
+                        reward -= 14
+            elif cAttributes[-2] == 3:
+                reward += 16
+        
+        if cAttributes[-3] == 0:
+            if action == "North":
+                reward -= 4
+            elif action == "South":
+                reward -= 4
+        else:
+            if action == "East":
+                reward -= 4
+            elif action == "West":
+                reward -= 4
+
+        # if action == "East":
+        #     if cAttributes[1] == 1:
+        #         if "E" in nAttributes[0]:
+        #             reward -= 15
+
+        # if action == "West":
+        #     if nAttributes[1] == 1:
+        #         if "W" in nAttributes[0]:
+        #             reward -= 15
+
+        # if action == "North":
+        #     if nAttributes[2] == 1:
+        #         if "N" in nAttributes[0]:
+        #             reward -= 15
+
+        # if action == "South":
+        #     if nAttributes[2] == 1:
+        #         if "S" in nAttributes[0]:
+        #             reward -= 15
+        
+
+        
+        return reward
 
     def getPolicy(self, state):
         "Return the best action in the qtable for a given state"
@@ -433,6 +514,442 @@ class Aprox3QAgent(QLearningAgent):
                         break
         
         return found_wall
+
+
+class Aprox4QAgent(QLearningAgent):
+    
+    def __init__(self, **args):
+        QLearningAgent.__init__(self, **args)
+    
+    def getAttributes(self, state):
+
+        minDistance = 99
+        minIndex = 0
+        pacmanPos = state.getPacmanPosition()
+        livingGhosts = state.getLivingGhosts()[1:]
+        ghostsPos = state.getGhostPositions()
+        ghostsDist = state.data.ghostDistances
+        dotDist, dotPos = state.getDistanceNearestFood()
+        map = state.getWalls()
+
+        for i in range(len(ghostsDist)):
+            if livingGhosts[i]:
+                if ghostsDist[i] < minDistance:
+                    minDistance = ghostsDist[i]
+                    minIndex = i
+        
+        if dotDist is not None and dotDist < minDistance:
+            
+            dist_x = dotPos[0] - pacmanPos[0]
+            dist_y = dotPos[1] - pacmanPos[1]
+             
+        else:
+            dist_x = ghostsPos[minIndex][0] - pacmanPos[0]
+            dist_y = ghostsPos[minIndex][1] - pacmanPos[1]
+        
+        direction = ""
+        if dist_x > 0:
+            direction += "E"
+
+        elif dist_x < 0:
+            direction += "W"
+        
+        if dist_y > 0:
+            direction += "N"
+        elif dist_y < 0:
+            direction += "S"
+
+        eastWest, northSouth = self.wallOneDirection(map, pacmanPos, direction)
+        if len(direction) == 2:
+            if eastWest != northSouth:
+                if eastWest == 1:
+                    northSouth = self.wallInDirection(map, pacmanPos, direction[0], direction[1])
+                else:
+                    eastWest = self.wallInDirection(map, pacmanPos, direction[1], direction[0])
+        
+        bucle = 0
+        if pacmanPos in self.lista_bucle:
+            bucle = 1 
+        
+        return direction, eastWest, northSouth, bucle
+
+    def wallOneDirection(self, map, pacPos, direction):
+        auxEW = 0
+        auxNS = 0
+        if "E" in direction:
+            auxEW = 1 if map[pacPos[0] + 1][pacPos[1]] else 0
+        if "W" in direction:
+            auxEW = 1 if map[pacPos[0] - 1][pacPos[1]] else 0
+        if "N" in direction:
+            auxNS = 1 if map[pacPos[0]][pacPos[1] + 1] else 0
+        if "S" in direction:
+            auxNS = 1 if map[pacPos[0]][pacPos[1] - 1] else 0
+        return auxEW, auxNS
+
+    def wallInDirection(self, map, pacPos, check_pared, move_direction):
+
+        pared = 1
+
+        if check_pared == "E" and move_direction == "N":
+            i = pacPos[1] + 1
+            j = pacPos[0] + 1
+            while not map[pacPos[0]][i]:
+                if not map[j][i]:
+                    pared = 0
+                    break
+                i += 1
+        elif check_pared == "E" and move_direction == "S":
+            j = pacPos[0] + 1
+            i = pacPos[1] - 1
+            while not map[pacPos[0]][i]:
+                if not map[j][i]:
+                    pared = 0
+                    break
+                i -= 1
+        elif check_pared == "W" and move_direction == "N":
+            i = pacPos[1] + 1
+            j = pacPos[0] - 1
+            while not map[pacPos[0]][i]:
+                if not map[j][i]:
+                    pared = 0
+                    break
+                i += 1
+        elif check_pared == "W" and move_direction == "S":
+            i = pacPos[1] - 1
+            j = pacPos[0] - 1
+            while not map[pacPos[0]][i]:
+                if not map[j][i]:
+                    pared = 0
+                    break
+                i -= 1
+        elif check_pared == "S" and move_direction == "E":
+            i = pacPos[0] + 1
+            j = pacPos[1] - 1
+            while not map[i][pacPos[1]]:
+                if not map[i][j]:
+                    pared = 0
+                    break
+                i += 1
+        
+        elif check_pared == "S" and move_direction == "W":
+            i = pacPos[0] - 1
+            j = pacPos[1] - 1
+            while not map[i][pacPos[1]]:
+                if not map[i][j]:
+                    pared = 0
+                    break
+                i -= 1
+        
+        elif check_pared == "N" and move_direction == "E":
+            i = pacPos[0] + 1
+            j = pacPos[1] + 1
+            while not map[i][pacPos[1]]:
+                if not map[i][j]:
+                    pared = 0
+                    break
+                i += 1     
+        else:
+            i = pacPos[0] - 1
+            j = pacPos[1] + 1
+            while not map[i][pacPos[1]]:
+                if not map[i][j]:
+                    pared = 0
+                    break
+                i -= 1
+        return pared
+
+class Aprox5QAgent(QLearningAgent):
+    def __init__(self, **args):
+        QLearningAgent.__init__(self, **args)
+    
+    def getAttributes(self, state):
+        minDistance = 99
+        minIndex = 0
+        pacmanPos = state.getPacmanPosition()
+        livingGhosts = state.getLivingGhosts()[1:]
+        ghostsPos = state.getGhostPositions()
+        ghostsDist = state.data.ghostDistances
+        dotDist, dotPos = state.getDistanceNearestFood()
+        map = state.getWalls()
+
+        for i in range(len(ghostsDist)):
+            if livingGhosts[i]:
+                if ghostsDist[i] < minDistance:
+                    minDistance = ghostsDist[i]
+                    minIndex = i
+        
+        if dotDist is not None and dotDist < minDistance:
+            
+            dist_x = dotPos[0] - pacmanPos[0]
+            dist_y = dotPos[1] - pacmanPos[1]
+            objectPos = dotPos    
+        else:
+            dist_x = ghostsPos[minIndex][0] - pacmanPos[0]
+            dist_y = ghostsPos[minIndex][1] - pacmanPos[1]
+            objectPos = ghostsPos[minIndex]
+             
+        direction = ""
+        if dist_x > 0:
+            direction += "E"
+        elif dist_x < 0:
+            direction += "W"
+        
+        if dist_y > 0:
+            direction += "N"
+        elif dist_y < 0:
+            direction += "S"
+
+
+        found_wall_x = False
+        found_wall_y = False
+        
+        if "E" in direction:
+            for i in range(pacmanPos[0], objectPos[0] + 1):
+                if map[i][pacmanPos[1]]:
+                    found_wall_x = True
+                    break
+        if "W" in direction:
+            for i in range(pacmanPos[0], objectPos[0] - 1, -1):
+                if map[i][pacmanPos[1]]:
+                    found_wall_x = True
+                    break
+        if "N" in direction:
+            for j in range(pacmanPos[1], objectPos[1]  + 1):
+                if map[pacmanPos[0]][j]:
+                    found_wall_y = True
+                    break
+        if "S" in direction:
+            for j in range(pacmanPos[1], objectPos[1] - 1, -1):
+                if map[pacmanPos[0]][j]:
+                    found_wall_y = True
+                    break
+        
+        found_wall = 0
+        if len(direction) == 1 and (found_wall_y or found_wall_x):
+                found_wall = 1
+                
+        elif len(direction) == 2:
+            if not found_wall_x:
+                if "N" in direction:
+                    for j in range(objectPos[1], pacmanPos[1] - 1, -1):
+                        if map[objectPos[0]][j]:
+                            found_wall_x = True
+                            break
+                elif "S" in direction:
+                    for j in range(objectPos[1], pacmanPos[1] + 1):
+                        if map[objectPos[0]][j]:
+                            found_wall_x = True
+                            break
+            elif not found_wall_y:
+                if "E" in direction:
+                    for i in range(objectPos[0], pacmanPos[0] - 1, -1):
+                        if map[i][objectPos[1]]:
+                            found_wall_y = True
+                            break
+                elif "W" in direction:
+                    for i in range(objectPos[0], pacmanPos[0] + 1):
+                        if map[i][objectPos[1]]:
+                            found_wall_y = True
+                            break
+            if found_wall_x and found_wall_y:
+                found_wall = 1
+        
+        if found_wall:
+            to_check = []
+            if map[pacmanPos[0] + 1][pacmanPos[1]]:
+                to_check.append("E")
+            if map[pacmanPos[0] - 1][pacmanPos[1]]:
+                to_check.append("W")
+            if map[pacmanPos[0]][pacmanPos[1] + 1]:
+                to_check.append("N")
+            if map[pacmanPos[0]][pacmanPos[1] - 1]:
+                to_check.append("S")
+        
+        wall = ""
+        rand = random.randint(0, len(to_check)-1)
+
+        for i in to_check:
+            if i in direction:
+                wall = i
+                break
+        
+        if wall == "":
+            wall = to_check[rand]
+
+        to_N = 0
+        to_S = 0
+        to_E = 0
+        to_W = 0
+        if wall == "N" or wall == "S":
+            wall = 0
+            if wall == "N":
+                to_N = 1
+            to_E = 1 if map[pacmanPos[0] + 1][pacmanPos[1]] else 0
+            to_W = 1 if map[pacmanPos[0] - 1][pacmanPos[1]] else 0
+        elif wall == "E" or wall == "W":
+            wall = 1
+            to_N = self.wallInDirection(map, pacmanPos, wall, "N")
+            to_S = self.wallInDirection(map, pacmanPos, wall, "S")
+
+        bucle = 0
+        if pacmanPos in self.lista_bucle:
+            bucle = 1  
+        
+        return direction, to_N, to_S, to_E, to_W, wall, bucle
+
+
+class Aprox6QAgent(QLearningAgent):
+    
+    def __init__(self, **args):
+        QLearningAgent.__init__(self, **args)
+    
+    def getAttributes(self, state):
+
+        minDistance = 99
+        minIndex = 0
+        pacmanPos = state.getPacmanPosition()
+        livingGhosts = state.getLivingGhosts()[1:]
+        ghostsPos = state.getGhostPositions()
+        ghostsDist = state.data.ghostDistances
+        dotDist, dotPos = state.getDistanceNearestFood()
+        map = state.getWalls()
+
+        for i in range(len(ghostsDist)):
+            if livingGhosts[i]:
+                if ghostsDist[i] < minDistance:
+                    minDistance = ghostsDist[i]
+                    minIndex = i
+        
+        if dotDist is not None and dotDist < minDistance:
+            
+            dist_x = dotPos[0] - pacmanPos[0]
+            dist_y = dotPos[1] - pacmanPos[1]
+             
+        else:
+            dist_x = ghostsPos[minIndex][0] - pacmanPos[0]
+            dist_y = ghostsPos[minIndex][1] - pacmanPos[1]
+        
+        direction = ""
+        wall_dir = 0
+        if dist_x > 0:
+            direction += "E"
+            if map[pacmanPos[0] + 1][pacmanPos[1]]:
+                wall_dir += 1
+        elif dist_x < 0:
+            direction += "W"
+            if map[pacmanPos[0] - 1][pacmanPos[1]]:
+                wall_dir += 1
+        if dist_y > 0:
+            direction += "N"
+            if map[pacmanPos[0]][pacmanPos[1] + 1]:
+                wall_dir += 2
+        elif dist_y < 0:
+            direction += "S"
+            if map[pacmanPos[0]][pacmanPos[1] - 1]:
+                wall_dir += 2
+
+        eastWest, northSouth = self.wallOneDirection(map, pacmanPos, direction)
+        if len(direction) == 2:
+            if eastWest != northSouth:
+                if eastWest == 1:
+                    northSouth = self.wallInDirection(map, pacmanPos, direction[0], direction[1])
+                else:
+                    eastWest = self.wallInDirection(map, pacmanPos, direction[1], direction[0])
+
+        
+        bucle = 0
+        if pacmanPos in self.lista_bucle:
+            bucle = 1
+        
+        menor_dist = 0 if abs(dist_y) > abs(dist_x) else 1
+        
+        return direction, eastWest, northSouth, menor_dist, wall_dir, bucle
+
+    def wallOneDirection(self, map, pacPos, direction):
+        auxEW = 0
+        auxNS = 0
+        if "E" in direction:
+            auxEW = 1 if map[pacPos[0] + 1][pacPos[1]] else 0
+        if "W" in direction:
+            auxEW = 1 if map[pacPos[0] - 1][pacPos[1]] else 0
+        if "N" in direction:
+            auxNS = 1 if map[pacPos[0]][pacPos[1] + 1] else 0
+        if "S" in direction:
+            auxNS = 1 if map[pacPos[0]][pacPos[1] - 1] else 0
+        return auxEW, auxNS
+
+    def wallInDirection(self, map, pacPos, check_pared, move_direction):
+
+        pared = 1
+
+        if check_pared == "E" and move_direction == "N":
+            i = pacPos[1] + 1
+            j = pacPos[0] + 1
+            while not map[pacPos[0]][i]:
+                if not map[j][i]:
+                    pared = 0
+                    break
+                i += 1
+        elif check_pared == "E" and move_direction == "S":
+            j = pacPos[0] + 1
+            i = pacPos[1] - 1
+            while not map[pacPos[0]][i]:
+                if not map[j][i]:
+                    pared = 0
+                    break
+                i -= 1
+        elif check_pared == "W" and move_direction == "N":
+            i = pacPos[1] + 1
+            j = pacPos[0] - 1
+            while not map[pacPos[0]][i]:
+                if not map[j][i]:
+                    pared = 0
+                    break
+                i += 1
+        elif check_pared == "W" and move_direction == "S":
+            i = pacPos[1] - 1
+            j = pacPos[0] - 1
+            while not map[pacPos[0]][i]:
+                if not map[j][i]:
+                    pared = 0
+                    break
+                i -= 1
+        elif check_pared == "S" and move_direction == "E":
+            i = pacPos[0] + 1
+            j = pacPos[1] - 1
+            while not map[i][pacPos[1]]:
+                if not map[i][j]:
+                    pared = 0
+                    break
+                i += 1
+        
+        elif check_pared == "S" and move_direction == "W":
+            i = pacPos[0] - 1
+            j = pacPos[1] - 1
+            while not map[i][pacPos[1]]:
+                if not map[i][j]:
+                    pared = 0
+                    break
+                i -= 1
+        
+        elif check_pared == "N" and move_direction == "E":
+            i = pacPos[0] + 1
+            j = pacPos[1] + 1
+            while not map[i][pacPos[1]]:
+                if not map[i][j]:
+                    pared = 0
+                    break
+                i += 1     
+        else:
+            i = pacPos[0] - 1
+            j = pacPos[1] + 1
+            while not map[i][pacPos[1]]:
+                if not map[i][j]:
+                    pared = 0
+                    break
+                i -= 1
+        return pared
+
 
 class PacmanQAgent(QLearningAgent):
     "Exactly the same as QLearningAgent, but with different default parameters"

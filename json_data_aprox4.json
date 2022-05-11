@@ -1,0 +1,26 @@
+[
+    {
+        "max-value": 8,
+        "type": "string",
+        "E": 0,
+        "W": 1,
+        "N": 2,
+        "S": 3,
+        "EN": 4,
+        "ES": 5,
+        "WN": 6,
+        "WS": 7
+    },
+    {
+        "max-value": 2,
+        "type": "integer"
+    },
+    {
+        "max-value": 2,
+        "type": "integer"
+    },
+    {
+        "max-value": 2,
+        "type": "integer"
+    }
+]

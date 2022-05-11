@@ -142,11 +142,6 @@ class ReinforcementAgent(ValueEstimationAgent):
         self.trainChange += 1
         if self.trainChange >= self.numTraining:
             self.trainChange = 0
-            # if self.numTraining == 200:
-            #     self.epsilon -= 0.1
-            #     self.alpha += 0.05
-            #     self.discount += 0.05
-            #     self.numTraining = 80
             if self.numTraining == 60:
                 self.numTraining = 2
                 self.epsilon = 0.0    # no exploration
@@ -154,7 +149,7 @@ class ReinforcementAgent(ValueEstimationAgent):
             else:
                 self.numTraining -= 10
                 self.epsilon -= 0.1
-                self.alpha += 0.05
+                # self.alpha += 0.05
                 self.discount += 0.05
 
     def isInTraining(self):
@@ -207,62 +202,6 @@ class ReinforcementAgent(ValueEstimationAgent):
     ###################
     # Pacman Specific #
     ###################
-    def calculateReward(self, state, nextState):
-
-        if self.lastAction == 'Stop':
-            return -100
-        reward = nextState.getScore() - state.getScore()
-        # minDistance = 99
-        # minIndex = 0
-        # pacmanPos = state.getPacmanPosition()
-        # livingGhosts = state.getLivingGhosts()[1:]
-        # ghostsPos = state.getGhostPositions()
-        # ghostsDist = state.data.ghostDistances
-        # dotDist, dotPos = state.getDistanceNearestFood()
-        # map = state.getWalls()
-        
-        # for i in range(len(ghostsDist)):
-        #     if livingGhosts[i]:
-        #         if ghostsDist[i] < minDistance:
-        #             minDistance = ghostsDist[i]
-        #             minIndex = i
-        
-        # if dotDist is not None and dotDist < minDistance:
-        #     minDistance = dotDist
-        #     dist_x = dotPos[0] - pacmanPos[0]
-        #     dist_y = dotPos[1] - pacmanPos[1]
-        # else:
-        #     dist_x = ghostsPos[minIndex][0] - pacmanPos[0]
-        #     dist_y = ghostsPos[minIndex][1] - pacmanPos[1]
-        
-        # # if minDistance == 0:
-        # #     if minDistance == dotDist:
-        # #         return 100
-        # #     else:
-        # #         return 200
-        # # elif minDistance == 1:
-        # #     if minDistance == dotDist:
-        # #         reward += 40
-        # #     else:
-        # #         reward += 80
-        # # elif minDistance == 2:
-        # #     if minDistance == dotDist:
-        # #         reward += 10
-        # #     else:
-        # #         reward += 20
-        
-        # if dist_x > 0:
-        #     reward += -20 if map[pacmanPos[0] + 1][pacmanPos[1]] else 0
-        # elif dist_x < 0:
-        #     reward += -20 if map[pacmanPos[0] - 1][pacmanPos[1]] else 0
-        
-        # if dist_y > 0:
-        #     reward += -20 if map[pacmanPos[0]][pacmanPos[1] + 1] else 0
-        # elif dist_y < 0:
-        #     reward += -20 if map[pacmanPos[0]][pacmanPos[1] - 1] else 0
-        
-        return reward
-
 
     def observationFunction(self, state):
         """
@@ -270,8 +209,7 @@ class ReinforcementAgent(ValueEstimationAgent):
             The simulation should somehow ensure this is called
         """
         if not self.lastState is None:
-            # reward = state.getScore() - self.lastState.getScore()
-            reward = self.calculateReward(self.lastState, state)
+            reward = state.getScore() - self.lastState.getScore()
             self.observeTransition(self.lastState, self.lastAction, state, reward)
         return state
 
@@ -284,8 +222,7 @@ class ReinforcementAgent(ValueEstimationAgent):
         """
           Called by Pacman game at the terminal state
         """
-        # deltaReward = state.getScore() - self.lastState.getScore()
-        deltaReward = self.calculateReward(self.lastState, state)
+        deltaReward = state.getScore() - self.lastState.getScore()
         self.observeTransition(self.lastState, self.lastAction, state, deltaReward)
         self.stopEpisode()
 
