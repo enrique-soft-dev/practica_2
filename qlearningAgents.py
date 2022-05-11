@@ -188,9 +188,8 @@ class QLearningAgent(ReinforcementAgent):
         ghostsPos = state.getGhostPositions()
         ghostsDist = state.data.ghostDistances
         dotDist, dotPos = state.getDistanceNearestFood()
-        numDots = state.getNumFood()
-        numAGhosts = sum(livingGhosts)
-        
+        map = state.getWalls()
+
         for i in range(len(ghostsDist)):
             if livingGhosts[i]:
                 if ghostsDist[i] < minDistance:
@@ -201,23 +200,131 @@ class QLearningAgent(ReinforcementAgent):
             
             dist_x = dotPos[0] - pacmanPos[0]
             dist_y = dotPos[1] - pacmanPos[1]
-            
+             
         else:
             dist_x = ghostsPos[minIndex][0] - pacmanPos[0]
             dist_y = ghostsPos[minIndex][1] - pacmanPos[1]
         
         direction = ""
+        wall_dir = 0
         if dist_x > 0:
-            direction += "East"
+            direction += "E"
+            if map[pacmanPos[0] + 1][pacmanPos[1]]:
+                wall_dir += 1
         elif dist_x < 0:
-            direction += "West"
-        
+            direction += "W"
+            if map[pacmanPos[0] - 1][pacmanPos[1]]:
+                wall_dir += 1
         if dist_y > 0:
-            direction += "North"
+            direction += "N"
+            if map[pacmanPos[0]][pacmanPos[1] + 1]:
+                wall_dir += 2
         elif dist_y < 0:
-            direction += "South"
+            direction += "S"
+            if map[pacmanPos[0]][pacmanPos[1] - 1]:
+                wall_dir += 2
+
+        eastWest, northSouth = self.wallOneDirection(map, pacmanPos, direction)
+        if len(direction) == 2:
+            if eastWest != northSouth:
+                if eastWest == 1:
+                    northSouth = self.wallInDirection(map, pacmanPos, direction[0], direction[1])
+                else:
+                    eastWest = self.wallInDirection(map, pacmanPos, direction[1], direction[0])
+
         
-        return numDots, numAGhosts, minDistance, direction
+        bucle = 0
+        if pacmanPos in self.lista_bucle:
+            bucle = 1
+        
+        menor_dist = 0 if abs(dist_y) > abs(dist_x) else 1
+        
+        return direction, eastWest, northSouth, menor_dist, wall_dir, bucle
+
+    def wallOneDirection(self, map, pacPos, direction):
+        auxEW = 0
+        auxNS = 0
+        if "E" in direction:
+            auxEW = 1 if map[pacPos[0] + 1][pacPos[1]] else 0
+        if "W" in direction:
+            auxEW = 1 if map[pacPos[0] - 1][pacPos[1]] else 0
+        if "N" in direction:
+            auxNS = 1 if map[pacPos[0]][pacPos[1] + 1] else 0
+        if "S" in direction:
+            auxNS = 1 if map[pacPos[0]][pacPos[1] - 1] else 0
+        return auxEW, auxNS
+
+    def wallInDirection(self, map, pacPos, check_pared, move_direction):
+
+        pared = 1
+
+        if check_pared == "E" and move_direction == "N":
+            i = pacPos[1] + 1
+            j = pacPos[0] + 1
+            while not map[pacPos[0]][i]:
+                if not map[j][i]:
+                    pared = 0
+                    break
+                i += 1
+        elif check_pared == "E" and move_direction == "S":
+            j = pacPos[0] + 1
+            i = pacPos[1] - 1
+            while not map[pacPos[0]][i]:
+                if not map[j][i]:
+                    pared = 0
+                    break
+                i -= 1
+        elif check_pared == "W" and move_direction == "N":
+            i = pacPos[1] + 1
+            j = pacPos[0] - 1
+            while not map[pacPos[0]][i]:
+                if not map[j][i]:
+                    pared = 0
+                    break
+                i += 1
+        elif check_pared == "W" and move_direction == "S":
+            i = pacPos[1] - 1
+            j = pacPos[0] - 1
+            while not map[pacPos[0]][i]:
+                if not map[j][i]:
+                    pared = 0
+                    break
+                i -= 1
+        elif check_pared == "S" and move_direction == "E":
+            i = pacPos[0] + 1
+            j = pacPos[1] - 1
+            while not map[i][pacPos[1]]:
+                if not map[i][j]:
+                    pared = 0
+                    break
+                i += 1
+        
+        elif check_pared == "S" and move_direction == "W":
+            i = pacPos[0] - 1
+            j = pacPos[1] - 1
+            while not map[i][pacPos[1]]:
+                if not map[i][j]:
+                    pared = 0
+                    break
+                i -= 1
+        
+        elif check_pared == "N" and move_direction == "E":
+            i = pacPos[0] + 1
+            j = pacPos[1] + 1
+            while not map[i][pacPos[1]]:
+                if not map[i][j]:
+                    pared = 0
+                    break
+                i += 1     
+        else:
+            i = pacPos[0] - 1
+            j = pacPos[1] + 1
+            while not map[i][pacPos[1]]:
+                if not map[i][j]:
+                    pared = 0
+                    break
+                i -= 1
+        return pared
 
     def update(self, state, action, nextState, reward):
         """ Update of Q-table """
@@ -655,147 +762,8 @@ class Aprox4QAgent(QLearningAgent):
                 i -= 1
         return pared
 
+
 class Aprox5QAgent(QLearningAgent):
-    def __init__(self, **args):
-        QLearningAgent.__init__(self, **args)
-    
-    def getAttributes(self, state):
-        minDistance = 99
-        minIndex = 0
-        pacmanPos = state.getPacmanPosition()
-        livingGhosts = state.getLivingGhosts()[1:]
-        ghostsPos = state.getGhostPositions()
-        ghostsDist = state.data.ghostDistances
-        dotDist, dotPos = state.getDistanceNearestFood()
-        map = state.getWalls()
-
-        for i in range(len(ghostsDist)):
-            if livingGhosts[i]:
-                if ghostsDist[i] < minDistance:
-                    minDistance = ghostsDist[i]
-                    minIndex = i
-        
-        if dotDist is not None and dotDist < minDistance:
-            
-            dist_x = dotPos[0] - pacmanPos[0]
-            dist_y = dotPos[1] - pacmanPos[1]
-            objectPos = dotPos    
-        else:
-            dist_x = ghostsPos[minIndex][0] - pacmanPos[0]
-            dist_y = ghostsPos[minIndex][1] - pacmanPos[1]
-            objectPos = ghostsPos[minIndex]
-             
-        direction = ""
-        if dist_x > 0:
-            direction += "E"
-        elif dist_x < 0:
-            direction += "W"
-        
-        if dist_y > 0:
-            direction += "N"
-        elif dist_y < 0:
-            direction += "S"
-
-
-        found_wall_x = False
-        found_wall_y = False
-        
-        if "E" in direction:
-            for i in range(pacmanPos[0], objectPos[0] + 1):
-                if map[i][pacmanPos[1]]:
-                    found_wall_x = True
-                    break
-        if "W" in direction:
-            for i in range(pacmanPos[0], objectPos[0] - 1, -1):
-                if map[i][pacmanPos[1]]:
-                    found_wall_x = True
-                    break
-        if "N" in direction:
-            for j in range(pacmanPos[1], objectPos[1]  + 1):
-                if map[pacmanPos[0]][j]:
-                    found_wall_y = True
-                    break
-        if "S" in direction:
-            for j in range(pacmanPos[1], objectPos[1] - 1, -1):
-                if map[pacmanPos[0]][j]:
-                    found_wall_y = True
-                    break
-        
-        found_wall = 0
-        if len(direction) == 1 and (found_wall_y or found_wall_x):
-                found_wall = 1
-                
-        elif len(direction) == 2:
-            if not found_wall_x:
-                if "N" in direction:
-                    for j in range(objectPos[1], pacmanPos[1] - 1, -1):
-                        if map[objectPos[0]][j]:
-                            found_wall_x = True
-                            break
-                elif "S" in direction:
-                    for j in range(objectPos[1], pacmanPos[1] + 1):
-                        if map[objectPos[0]][j]:
-                            found_wall_x = True
-                            break
-            elif not found_wall_y:
-                if "E" in direction:
-                    for i in range(objectPos[0], pacmanPos[0] - 1, -1):
-                        if map[i][objectPos[1]]:
-                            found_wall_y = True
-                            break
-                elif "W" in direction:
-                    for i in range(objectPos[0], pacmanPos[0] + 1):
-                        if map[i][objectPos[1]]:
-                            found_wall_y = True
-                            break
-            if found_wall_x and found_wall_y:
-                found_wall = 1
-        
-        if found_wall:
-            to_check = []
-            if map[pacmanPos[0] + 1][pacmanPos[1]]:
-                to_check.append("E")
-            if map[pacmanPos[0] - 1][pacmanPos[1]]:
-                to_check.append("W")
-            if map[pacmanPos[0]][pacmanPos[1] + 1]:
-                to_check.append("N")
-            if map[pacmanPos[0]][pacmanPos[1] - 1]:
-                to_check.append("S")
-        
-        wall = ""
-        rand = random.randint(0, len(to_check)-1)
-
-        for i in to_check:
-            if i in direction:
-                wall = i
-                break
-        
-        if wall == "":
-            wall = to_check[rand]
-
-        to_N = 0
-        to_S = 0
-        to_E = 0
-        to_W = 0
-        if wall == "N" or wall == "S":
-            wall = 0
-            if wall == "N":
-                to_N = 1
-            to_E = 1 if map[pacmanPos[0] + 1][pacmanPos[1]] else 0
-            to_W = 1 if map[pacmanPos[0] - 1][pacmanPos[1]] else 0
-        elif wall == "E" or wall == "W":
-            wall = 1
-            to_N = self.wallInDirection(map, pacmanPos, wall, "N")
-            to_S = self.wallInDirection(map, pacmanPos, wall, "S")
-
-        bucle = 0
-        if pacmanPos in self.lista_bucle:
-            bucle = 1  
-        
-        return direction, to_N, to_S, to_E, to_W, wall, bucle
-
-
-class Aprox6QAgent(QLearningAgent):
     
     def __init__(self, **args):
         QLearningAgent.__init__(self, **args)

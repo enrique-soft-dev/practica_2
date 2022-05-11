@@ -24,13 +24,10 @@
         "type": "integer"
     },
     {
-        "max-value": 2,
+        "max-value": 4,
         "type": "integer"
     },
     {
-        "max-value": 2,
-        "type": "integer"
-    },{
         "max-value": 2,
         "type": "integer"
     }

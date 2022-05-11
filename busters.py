@@ -538,11 +538,11 @@ def readCommand( argv ):
     parser.add_option('-t', '--frameTime', dest='frameTime', type='float',
                       help=default('Time to delay between frames; <0 means keyboard'), default=0.1)
     parser.add_option('-j', '--jsonFile', dest='jsonFile', type='string', help='The JSON file with the attributes to use',
-                      default='json_data.json')
+                      default='json_data_aprox5.json')
     parser.add_option('-c', '--createTable', action='store_true', dest='createTable', 
                       help='Creates the QTable. If no value given it reads the already created qtable.txt', default=False)
     parser.add_option('-b', '--qTableFile', dest='qTableFile', type='string', 
-                      help='qTable file to read or create', default='qtable')
+                      help='qTable file to read or create', default='qtable_aprox5')
     parser.add_option('-d', '--display', action='store_false', dest='isDisplayed',
                       help='True if we want to display the game', default=True)
 
